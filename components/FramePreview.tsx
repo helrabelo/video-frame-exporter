@@ -1,20 +1,39 @@
 'use client'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { FrameData } from '@/utils/frameUtils'
+import { ExportFormat, ExportResolution } from './ExportOptions'
 
 interface FramePreviewProps {
   frameData: FrameData | null
-  exportFormat: 'png' | 'jpeg' | 'webp'
-  exportResolution: 'original' | '720p' | '1080p'
+  exportFormat: ExportFormat
+  exportResolution: ExportResolution
 }
 
 const FramePreview = ({ frameData, exportFormat, exportResolution }: FramePreviewProps) => {
+  // Calculate dimensions based on resolution
+  const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number } | null>(null)
+
+  useEffect(() => {
+    if (!frameData) {
+      setOutputDimensions(null)
+      return
+    }
+
+    // Calculate dimensions based on selected resolution
+    const percentage = parseInt(exportResolution.replace('%', '')) / 100
+    const width = Math.round(frameData.width * percentage)
+    const height = Math.round(frameData.height * percentage)
+    
+    setOutputDimensions({ width, height })
+  }, [frameData, exportResolution])
+
   // Format the timestamp as minutes:seconds.milliseconds
   const formatTimestamp = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = Math.floor(seconds % 60)
     const milliseconds = Math.floor((seconds % 1) * 1000)
-
+    
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`
   }
 
@@ -23,7 +42,7 @@ const FramePreview = ({ frameData, exportFormat, exportResolution }: FramePrevie
       <div className="mt-6 p-4 bg-gray-700 rounded-lg flex items-center justify-center h-64">
         <p className="text-gray-400 text-center">
           No frame captured yet. <br />
-          Use the "Capture Frame" button to capture a frame from the video.
+          Use the &quot;Capture Frame&quot; button to capture a frame from the video.
         </p>
       </div>
     )
@@ -32,11 +51,11 @@ const FramePreview = ({ frameData, exportFormat, exportResolution }: FramePrevie
   return (
     <div className="mt-6 p-4 bg-gray-700 rounded-lg">
       <h3 className="text-lg font-medium mb-3 text-gray-200">Captured Frame</h3>
-
+      
       {/* Frame metadata */}
       <div className="mb-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
         <div className="bg-gray-800 p-2 rounded">
-          <span className="block text-gray-400">Dimensions</span>
+          <span className="block text-gray-400">Original Dimensions</span>
           <span className="font-mono">{frameData.width} × {frameData.height}</span>
         </div>
         <div className="bg-gray-800 p-2 rounded">
@@ -44,15 +63,17 @@ const FramePreview = ({ frameData, exportFormat, exportResolution }: FramePrevie
           <span className="font-mono">{formatTimestamp(frameData.timestamp)}</span>
         </div>
         <div className="bg-gray-800 p-2 rounded">
-          <span className="block text-gray-400">Format</span>
+          <span className="block text-gray-400">Export Format</span>
           <span className="font-mono">{exportFormat.toUpperCase()}</span>
         </div>
         <div className="bg-gray-800 p-2 rounded">
-          <span className="block text-gray-400">Resolution</span>
-          <span className="font-mono">{exportResolution}</span>
+          <span className="block text-gray-400">Export Dimensions</span>
+          <span className="font-mono">
+            {outputDimensions ? `${outputDimensions.width} × ${outputDimensions.height}` : 'Calculating...'}
+          </span>
         </div>
       </div>
-
+      
       {/* Frame preview */}
       <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-md border border-gray-600">
         <Image
