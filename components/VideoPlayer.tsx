@@ -3,9 +3,17 @@ import { useRef, useState, useEffect } from 'react';
 
 interface VideoPlayerProps {
   onVideoElementReady?: (videoElement: HTMLVideoElement) => void;
+  customVideoSrc?: string;
+  customVideoType?: string;
+  videoName?: string;
 }
 
-const VideoPlayer = ({ onVideoElementReady }: VideoPlayerProps) => {
+const VideoPlayer = ({ 
+  onVideoElementReady, 
+  customVideoSrc, 
+  customVideoType = 'video/mp4',
+  videoName = 'Default Video'
+}: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -13,6 +21,7 @@ const VideoPlayer = ({ onVideoElementReady }: VideoPlayerProps) => {
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
 
   const handleLoadedData = () => {
     if (videoRef.current) {
@@ -20,7 +29,12 @@ const VideoPlayer = ({ onVideoElementReady }: VideoPlayerProps) => {
         onVideoElementReady(videoRef.current);
       }
       setDuration(videoRef.current.duration);
+      setVideoError(null);
     }
+  };
+
+  const handleVideoError = () => {
+    setVideoError('Error loading video. Please try another file or use the default video.');
   };
 
   // Format the timestamp as minutes:seconds.milliseconds
@@ -79,6 +93,18 @@ const VideoPlayer = ({ onVideoElementReady }: VideoPlayerProps) => {
     }
   };
 
+  // Reset video state when source changes
+  useEffect(() => {
+    setCurrentTime(0);
+    setIsPlaying(false);
+    setVideoError(null);
+    
+    // If video is already loaded, reset its time
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+    }
+  }, [customVideoSrc]);
+
   useEffect(() => {
     const videoElement = videoRef.current;
     if (videoElement) {
@@ -122,9 +148,14 @@ const VideoPlayer = ({ onVideoElementReady }: VideoPlayerProps) => {
           loop
           playsInline
           onLoadedData={handleLoadedData}
-          aria-label="Video player"
+          onError={handleVideoError}
+          aria-label={`Video player - ${videoName}`}
         >
-          <source src="/video_640_360_24fps.mp4" type="video/mp4" />
+          {customVideoSrc ? (
+            <source src={customVideoSrc} type={customVideoType} />
+          ) : (
+            <source src="/video_640_360_24fps.mp4" type="video/mp4" />
+          )}
           Your browser does not support the video tag.
         </video>
         
@@ -213,7 +244,14 @@ const VideoPlayer = ({ onVideoElementReady }: VideoPlayerProps) => {
       </div>
       
       <div className="mt-2 text-xs text-gray-400 text-center">
-        Current time: {formatTimestamp(currentTime)}
+        {videoError ? (
+          <div className="text-red-500">{videoError}</div>
+        ) : (
+          <>
+            <div className="font-medium">{videoName}</div>
+            <div>Current time: {formatTimestamp(currentTime)}</div>
+          </>
+        )}
       </div>
     </div>
   );
