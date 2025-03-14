@@ -3,10 +3,8 @@ import { useState } from 'react'
 import VideoPlayer from '@/components/VideoPlayer'
 import FrameCapture from '@/components/FrameCapture'
 import FramePreview from '@/components/FramePreview'
+import ExportOptions, { ExportFormat, ExportResolution } from '@/components/ExportOptions'
 import { FrameData, resizeFrame, downloadFrame } from '@/utils/frameUtils'
-
-type ExportFormat = 'png' | 'jpeg' | 'webp'
-type ExportResolution = 'original' | '720p' | '1080p'
 
 export default function Home() {
   // Video element reference
@@ -20,7 +18,7 @@ export default function Home() {
 
   // Export options
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png')
-  const [exportResolution, setExportResolution] = useState<ExportResolution>('original')
+  const [exportResolution, setExportResolution] = useState<ExportResolution>('100%')
 
   const handleVideoElementReady = (element: HTMLVideoElement) => {
     setVideoElement(element)
@@ -66,38 +64,14 @@ export default function Home() {
           <VideoPlayer onVideoElementReady={handleVideoElementReady} />
 
           <div className="mt-6 space-y-6">
-            {/* Export options */}
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Export Format
-                </label>
-                <select
-                  value={exportFormat}
-                  onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
-                  className="block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  <option value="png">PNG</option>
-                  <option value="jpeg">JPEG</option>
-                  <option value="webp">WebP</option>
-                </select>
-              </div>
-
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Resolution
-                </label>
-                <select
-                  value={exportResolution}
-                  onChange={(e) => setExportResolution(e.target.value as ExportResolution)}
-                  className="block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  <option value="original">Original</option>
-                  <option value="720p">720p</option>
-                  <option value="1080p">1080p</option>
-                </select>
-              </div>
-            </div>
+            {/* Export options component */}
+            <ExportOptions
+              frameData={capturedFrame}
+              format={exportFormat}
+              resolution={exportResolution}
+              onFormatChange={setExportFormat}
+              onResolutionChange={setExportResolution}
+            />
 
             <div className="flex flex-col sm:flex-row gap-4">
               {/* Frame capture button */}
