@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { captureVideoFrame, FrameData } from '@/utils/frameUtils'
 
 interface FrameCaptureProps {
@@ -10,6 +10,16 @@ interface FrameCaptureProps {
 const FrameCapture = ({ videoElement, onCapture }: FrameCaptureProps) => {
   const [isCapturing, setIsCapturing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const successTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current)
+      }
+    }
+  }, [])
 
   const captureFrame = async () => {
     if (!videoElement) return
@@ -26,7 +36,17 @@ const FrameCapture = ({ videoElement, onCapture }: FrameCaptureProps) => {
         
         // Show success message
         setShowSuccess(true)
-        setTimeout(() => setShowSuccess(false), 3000)
+        
+        // Clear any existing timer
+        if (successTimerRef.current) {
+          clearTimeout(successTimerRef.current)
+        }
+        
+        // Set new timer and store the reference
+        successTimerRef.current = setTimeout(() => {
+          setShowSuccess(false)
+          successTimerRef.current = null
+        }, 3000)
       } else {
         throw new Error('Failed to capture frame')
       }

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { FrameData, resizeFrame, downloadFrame } from '@/utils/frameUtils'
 import { ExportFormat, ExportResolution } from './ExportOptions'
 
@@ -12,6 +12,16 @@ interface DownloadButtonProps {
 const DownloadButton = ({ frameData, format, resolution }: DownloadButtonProps) => {
   const [isExporting, setIsExporting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const successTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleExport = async () => {
     if (!frameData) return
@@ -35,7 +45,17 @@ const DownloadButton = ({ frameData, format, resolution }: DownloadButtonProps) 
       
       // Show success message
       setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 3000)
+      
+      // Clear any existing timer
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current)
+      }
+      
+      // Set new timer and store the reference
+      successTimerRef.current = setTimeout(() => {
+        setShowSuccess(false)
+        successTimerRef.current = null
+      }, 3000)
     } catch (error) {
       console.error('Error exporting frame:', error)
     } finally {
