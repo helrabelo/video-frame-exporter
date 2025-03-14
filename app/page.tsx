@@ -3,6 +3,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import VideoPlayer from '@/components/VideoPlayer'
 import FrameCapture from '@/components/FrameCapture'
+import { FrameData, resizeFrame, downloadFrame } from '@/utils/frameUtils'
 
 type ExportFormat = 'png' | 'jpeg' | 'webp'
 type ExportResolution = 'original' | '720p' | '1080p'
@@ -12,21 +13,56 @@ export default function Home() {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null)
 
   // Captured frame data
-  const [capturedFrame, setCapturedFrame] = useState<string | null>(null)
+  const [capturedFrame, setCapturedFrame] = useState<FrameData | null>(null)
+  
+  // Loading state for export
+  const [isExporting, setIsExporting] = useState(false)
 
   // Export options
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png')
   const [exportResolution, setExportResolution] = useState<ExportResolution>('original')
 
-  // @TODO: Add frame export button and handler
-  // @TODO: Add error handling for video element operations
-
   const handleVideoElementReady = (element: HTMLVideoElement) => {
     setVideoElement(element)
   }
 
-  const handleFrameCapture = (frameDataUrl: string) => {
-    setCapturedFrame(frameDataUrl)
+  const handleFrameCapture = (frameData: FrameData) => {
+    setCapturedFrame(frameData)
+  }
+  
+  const handleExportFrame = async () => {
+    if (!capturedFrame) return
+    
+    try {
+      setIsExporting(true)
+      
+      // Resize the frame if needed and convert to the selected format
+      const processedFrame = await resizeFrame(
+        capturedFrame,
+        exportResolution,
+        exportFormat
+      )
+      
+      // Generate a filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const filename = `frame-${timestamp}`
+      
+      // Download the frame
+      downloadFrame(processedFrame, filename, exportFormat)
+    } catch (error) {
+      console.error('Error exporting frame:', error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  // Format the timestamp as minutes:seconds.milliseconds
+  const formatTimestamp = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = Math.floor(seconds % 60)
+    const milliseconds = Math.floor((seconds % 1) * 1000)
+    
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`
   }
 
   return (
@@ -79,21 +115,54 @@ export default function Home() {
                 onCapture={handleFrameCapture} 
               />
 
-              {/* @TODO: Add frame export button */}
+              {/* Frame export button */}
               <button
+                onClick={handleExportFrame}
                 className="flex-1 px-6 py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!capturedFrame}
+                disabled={!capturedFrame || isExporting}
               >
-                Export Frame
+                {isExporting ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Exporting...
+                  </div>
+                ) : (
+                  'Export Frame'
+                )}
               </button>
             </div>
 
             {capturedFrame && (
               <div className="mt-6 p-4 bg-gray-700 rounded-lg">
                 <h3 className="text-lg font-medium mb-3 text-gray-200">Captured Frame</h3>
+                
+                {/* Frame metadata */}
+                <div className="mb-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                  <div className="bg-gray-800 p-2 rounded">
+                    <span className="block text-gray-400">Dimensions</span>
+                    <span className="font-mono">{capturedFrame.width} × {capturedFrame.height}</span>
+                  </div>
+                  <div className="bg-gray-800 p-2 rounded">
+                    <span className="block text-gray-400">Timestamp</span>
+                    <span className="font-mono">{formatTimestamp(capturedFrame.timestamp)}</span>
+                  </div>
+                  <div className="bg-gray-800 p-2 rounded">
+                    <span className="block text-gray-400">Format</span>
+                    <span className="font-mono">{exportFormat.toUpperCase()}</span>
+                  </div>
+                  <div className="bg-gray-800 p-2 rounded">
+                    <span className="block text-gray-400">Resolution</span>
+                    <span className="font-mono">{exportResolution}</span>
+                  </div>
+                </div>
+                
+                {/* Frame preview */}
                 <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-md border border-gray-600">
                   <Image
-                    src={capturedFrame}
+                    src={capturedFrame.dataUrl}
                     alt="Captured frame"
                     fill
                     className="object-contain"
