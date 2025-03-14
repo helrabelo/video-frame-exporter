@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
-import Image from 'next/image'
 import VideoPlayer from '@/components/VideoPlayer'
 import FrameCapture from '@/components/FrameCapture'
+import FramePreview from '@/components/FramePreview'
 import { FrameData, resizeFrame, downloadFrame } from '@/utils/frameUtils'
 
 type ExportFormat = 'png' | 'jpeg' | 'webp'
@@ -54,15 +54,6 @@ export default function Home() {
     } finally {
       setIsExporting(false)
     }
-  }
-
-  // Format the timestamp as minutes:seconds.milliseconds
-  const formatTimestamp = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-    const milliseconds = Math.floor((seconds % 1) * 1000)
-    
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`
   }
 
   return (
@@ -135,42 +126,12 @@ export default function Home() {
               </button>
             </div>
 
-            {capturedFrame && (
-              <div className="mt-6 p-4 bg-gray-700 rounded-lg">
-                <h3 className="text-lg font-medium mb-3 text-gray-200">Captured Frame</h3>
-                
-                {/* Frame metadata */}
-                <div className="mb-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                  <div className="bg-gray-800 p-2 rounded">
-                    <span className="block text-gray-400">Dimensions</span>
-                    <span className="font-mono">{capturedFrame.width} × {capturedFrame.height}</span>
-                  </div>
-                  <div className="bg-gray-800 p-2 rounded">
-                    <span className="block text-gray-400">Timestamp</span>
-                    <span className="font-mono">{formatTimestamp(capturedFrame.timestamp)}</span>
-                  </div>
-                  <div className="bg-gray-800 p-2 rounded">
-                    <span className="block text-gray-400">Format</span>
-                    <span className="font-mono">{exportFormat.toUpperCase()}</span>
-                  </div>
-                  <div className="bg-gray-800 p-2 rounded">
-                    <span className="block text-gray-400">Resolution</span>
-                    <span className="font-mono">{exportResolution}</span>
-                  </div>
-                </div>
-                
-                {/* Frame preview */}
-                <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-md border border-gray-600">
-                  <Image
-                    src={capturedFrame.dataUrl}
-                    alt="Captured frame"
-                    fill
-                    className="object-contain"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                </div>
-              </div>
-            )}
+            {/* Frame preview component */}
+            <FramePreview 
+              frameData={capturedFrame}
+              exportFormat={exportFormat}
+              exportResolution={exportResolution}
+            />
           </div>
         </div>
       </main>
