@@ -1,10 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import VideoPlayer from '@/components/VideoPlayer'
 import FrameCapture from '@/components/FrameCapture'
 import FramePreview from '@/components/FramePreview'
 import ExportOptions, { ExportFormat, ExportResolution } from '@/components/ExportOptions'
 import DownloadButton from '@/components/DownloadButton'
+import VideoUpload from '@/components/VideoUpload'
 import { FrameData } from '@/utils/frameUtils'
 
 export default function Home() {
@@ -18,12 +19,56 @@ export default function Home() {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png')
   const [exportResolution, setExportResolution] = useState<ExportResolution>('100%')
 
+  // Custom video state
+  const [customVideoSrc, setCustomVideoSrc] = useState<string | undefined>(undefined)
+  const [customVideoType, setCustomVideoType] = useState<string>('video/mp4')
+  const [videoName, setVideoName] = useState<string>('Default Video')
+  
+  // Clean up blob URLs when component unmounts or when a new video is uploaded
+  useEffect(() => {
+    return () => {
+      if (customVideoSrc && customVideoSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(customVideoSrc)
+      }
+    }
+  }, [customVideoSrc])
+
   const handleVideoElementReady = (element: HTMLVideoElement) => {
     setVideoElement(element)
   }
 
   const handleFrameCapture = (frameData: FrameData) => {
     setCapturedFrame(frameData)
+  }
+
+  const handleVideoSelected = (videoSrc: string, videoType: string, fileName: string) => {
+    // Clean up previous blob URL if it exists
+    if (customVideoSrc && customVideoSrc.startsWith('blob:')) {
+      URL.revokeObjectURL(customVideoSrc)
+    }
+    
+    // Update video state
+    setCustomVideoSrc(videoSrc)
+    setCustomVideoType(videoType)
+    setVideoName(fileName)
+    
+    // Reset captured frame when video changes
+    setCapturedFrame(null)
+  }
+
+  const handleResetVideo = () => {
+    // Clean up blob URL if it exists
+    if (customVideoSrc && customVideoSrc.startsWith('blob:')) {
+      URL.revokeObjectURL(customVideoSrc)
+    }
+    
+    // Reset to default video
+    setCustomVideoSrc(undefined)
+    setCustomVideoType('video/mp4')
+    setVideoName('Default Video')
+    
+    // Reset captured frame
+    setCapturedFrame(null)
   }
 
   return (
@@ -33,8 +78,32 @@ export default function Home() {
 
         {/* Video Player - Top */}
         <div className="bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700">
-          <h2 className="text-xl font-semibold mb-4 text-gray-100">Video Player</h2>
-          <VideoPlayer onVideoElementReady={handleVideoElementReady} />
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
+            <h2 className="text-xl font-semibold text-gray-100">Video Player</h2>
+            
+            {customVideoSrc && (
+              <button
+                onClick={handleResetVideo}
+                className="text-sm px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md text-gray-200 transition-colors"
+                aria-label="Reset to default video"
+              >
+                Reset to Default Video
+              </button>
+            )}
+          </div>
+          
+          <VideoPlayer 
+            onVideoElementReady={handleVideoElementReady}
+            customVideoSrc={customVideoSrc}
+            customVideoType={customVideoType}
+            videoName={videoName}
+          />
+        </div>
+
+        {/* Video Upload */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700">
+          <h2 className="text-xl font-semibold mb-4 text-gray-100">Upload Your Own Video</h2>
+          <VideoUpload onVideoSelected={handleVideoSelected} />
         </div>
 
         {/* Actions and Export Options - Middle, side by side */}
