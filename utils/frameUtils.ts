@@ -60,19 +60,19 @@ export const captureVideoFrame = (
 /**
  * Resizes a frame data URL to the specified resolution
  * @param frameData The original frame data
- * @param resolution The target resolution ('original', '720p', '1080p')
+ * @param resolution The target resolution ('100%', '75%', '50%', '25%')
  * @param format The output format
  * @param quality The quality for jpeg and webp formats
  * @returns A new FrameData object with the resized image
  */
 export const resizeFrame = (
   frameData: FrameData,
-  resolution: 'original' | '720p' | '1080p',
+  resolution: '100%' | '75%' | '50%' | '25%',
   format: 'png' | 'jpeg' | 'webp' = 'png',
   quality: number = 0.95
 ): Promise<FrameData> => {
   return new Promise((resolve, reject) => {
-    if (resolution === 'original') {
+    if (resolution === '100%') {
       // If original resolution, just change format if needed
       if (format === 'png' && frameData.dataUrl.includes('image/png')) {
         resolve(frameData);
@@ -108,16 +108,10 @@ export const resizeFrame = (
       return;
     }
     
-    // Calculate new dimensions based on resolution while maintaining aspect ratio
-    let targetHeight: number;
-    if (resolution === '720p') {
-      targetHeight = 720;
-    } else { // 1080p
-      targetHeight = 1080;
-    }
-    
-    const aspectRatio = frameData.width / frameData.height;
-    const targetWidth = Math.round(targetHeight * aspectRatio);
+    // Calculate new dimensions based on percentage
+    const percentage = parseInt(resolution.replace('%', '')) / 100;
+    const targetWidth = Math.round(frameData.width * percentage);
+    const targetHeight = Math.round(frameData.height * percentage);
     
     const img = new Image();
     img.onload = () => {
