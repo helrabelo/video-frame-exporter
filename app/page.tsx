@@ -2,29 +2,31 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import VideoPlayer from '@/components/VideoPlayer'
+import FrameCapture from '@/components/FrameCapture'
 
 type ExportFormat = 'png' | 'jpeg' | 'webp'
 type ExportResolution = 'original' | '720p' | '1080p'
 
 export default function Home() {
-  // @TODO: Implement frame capture functionality using videoElement
+  // Video element reference
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null)
 
-  // @TODO: Update capturedFrame when a frame is captured from the video
+  // Captured frame data
   const [capturedFrame, setCapturedFrame] = useState<string | null>(null)
 
-  // @TODO: Apply selected format when exporting the captured frame
+  // Export options
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png')
-
-  // @TODO: Apply selected resolution when capturing and exporting the frame
   const [exportResolution, setExportResolution] = useState<ExportResolution>('original')
 
-  // @TODO: Add frame capture button and handler
   // @TODO: Add frame export button and handler
   // @TODO: Add error handling for video element operations
 
   const handleVideoElementReady = (element: HTMLVideoElement) => {
     setVideoElement(element)
+  }
+
+  const handleFrameCapture = (frameDataUrl: string) => {
+    setCapturedFrame(frameDataUrl)
   }
 
   return (
@@ -37,7 +39,7 @@ export default function Home() {
           <VideoPlayer onVideoElementReady={handleVideoElementReady} />
 
           <div className="mt-6 space-y-6">
-            {/* @TODO: Add frame capture controls */}
+            {/* Export options */}
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -71,13 +73,11 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              {/* @TODO: Add frame capture button */}
-              <button
-                className="flex-1 px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!videoElement}
-              >
-                Capture Frame
-              </button>
+              {/* Frame capture button */}
+              <FrameCapture 
+                videoElement={videoElement} 
+                onCapture={handleFrameCapture} 
+              />
 
               {/* @TODO: Add frame export button */}
               <button
