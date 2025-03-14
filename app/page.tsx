@@ -27,16 +27,37 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100">
-      <main className="w-full max-w-4xl px-4">
-        <h1 className="text-3xl font-bold mb-8 text-center text-white">Video Frame Exporter</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100 py-8">
+      <main className="w-full max-w-6xl px-4 flex flex-col gap-6">
+        <h1 className="text-3xl font-bold mb-2 text-center text-white">Video Frame Exporter</h1>
 
+        {/* Video Player - Top */}
         <div className="bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700">
           <h2 className="text-xl font-semibold mb-4 text-gray-100">Video Player</h2>
           <VideoPlayer onVideoElementReady={handleVideoElementReady} />
+        </div>
 
-          <div className="mt-6 space-y-6">
-            {/* Export options component */}
+        {/* Actions and Export Options - Middle, side by side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Actions */}
+          <div className="bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700">
+            <h2 className="text-xl font-semibold mb-4 text-gray-100">Actions</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FrameCapture 
+                videoElement={videoElement} 
+                onCapture={handleFrameCapture} 
+              />
+              <DownloadButton
+                frameData={capturedFrame}
+                format={exportFormat}
+                resolution={exportResolution}
+              />
+            </div>
+          </div>
+
+          {/* Export Options */}
+          <div className="bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700">
+            <h2 className="text-xl font-semibold mb-4 text-gray-100">Export Options</h2>
             <ExportOptions
               frameData={capturedFrame}
               format={exportFormat}
@@ -44,29 +65,17 @@ export default function Home() {
               onFormatChange={setExportFormat}
               onResolutionChange={setExportResolution}
             />
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              {/* Frame capture button */}
-              <FrameCapture 
-                videoElement={videoElement} 
-                onCapture={handleFrameCapture} 
-              />
-
-              {/* Download button component */}
-              <DownloadButton
-                frameData={capturedFrame}
-                format={exportFormat}
-                resolution={exportResolution}
-              />
-            </div>
-
-            {/* Frame preview component */}
-            <FramePreview 
-              frameData={capturedFrame}
-              exportFormat={exportFormat}
-              exportResolution={exportResolution}
-            />
           </div>
+        </div>
+
+        {/* Preview - Bottom */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700">
+          <h2 className="text-xl font-semibold mb-4 text-gray-100">Preview</h2>
+          <FramePreview 
+            frameData={capturedFrame}
+            exportFormat={exportFormat}
+            exportResolution={exportResolution}
+          />
         </div>
       </main>
     </div>

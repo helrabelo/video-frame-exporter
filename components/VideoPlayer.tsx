@@ -114,7 +114,7 @@ const VideoPlayer = ({ onVideoElementReady }: VideoPlayerProps) => {
 
   return (
     <div className="video-container">
-      <div className="relative rounded-lg overflow-hidden bg-black">
+      <div className="relative rounded-lg overflow-hidden bg-black max-w-3xl mx-auto">
         <video
           ref={videoRef}
           className="w-full h-auto"
@@ -129,7 +129,7 @@ const VideoPlayer = ({ onVideoElementReady }: VideoPlayerProps) => {
         </video>
         
         {/* Custom controls */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 transition-opacity opacity-100 hover:opacity-100 flex flex-col gap-2">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 transition-opacity opacity-90 hover:opacity-100 flex flex-col gap-2">
           {/* Progress bar */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-white font-mono">{formatTimestamp(currentTime)}</span>
@@ -212,7 +212,7 @@ const VideoPlayer = ({ onVideoElementReady }: VideoPlayerProps) => {
         </div>
       </div>
       
-      <div className="mt-2 text-xs text-gray-400">
+      <div className="mt-2 text-xs text-gray-400 text-center">
         Current time: {formatTimestamp(currentTime)}
       </div>
     </div>
