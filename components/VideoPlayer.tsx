@@ -3,6 +3,7 @@ import { useRef, useState, useEffect } from 'react';
 
 interface VideoPlayerProps {
   onVideoElementReady?: (videoElement: HTMLVideoElement) => void;
+  onVideoError?: (errorMessage: string) => void;
   customVideoSrc?: string;
   customVideoType?: string;
   videoName?: string;
@@ -10,6 +11,7 @@ interface VideoPlayerProps {
 
 const VideoPlayer = ({ 
   onVideoElementReady, 
+  onVideoError,
   customVideoSrc, 
   customVideoType = 'video/mp4',
   videoName = 'Default Video'
@@ -22,19 +24,36 @@ const VideoPlayer = ({
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Reset video state when source changes
+  useEffect(() => {
+    setCurrentTime(0);
+    setIsPlaying(false);
+    setVideoError(null);
+    setIsLoading(true);
+  }, [customVideoSrc]);
 
   const handleLoadedData = () => {
     if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+      setVideoError(null);
+      setIsLoading(false);
+      
       if (onVideoElementReady) {
         onVideoElementReady(videoRef.current);
       }
-      setDuration(videoRef.current.duration);
-      setVideoError(null);
     }
   };
 
   const handleVideoError = () => {
-    setVideoError('Error loading video. Please try another file or use the default video.');
+    const errorMessage = 'Error loading video. Please try another file or use the default video.';
+    setVideoError(errorMessage);
+    setIsLoading(false);
+    
+    if (onVideoError) {
+      onVideoError(errorMessage);
+    }
   };
 
   // Format the timestamp as minutes:seconds.milliseconds
@@ -51,7 +70,13 @@ const VideoPlayer = ({
       if (isPlaying) {
         videoRef.current.pause();
       } else {
-        videoRef.current.play();
+        videoRef.current.play().catch(err => {
+          console.error('Error playing video:', err);
+          // Handle autoplay restrictions
+          if (err.name === 'NotAllowedError') {
+            setVideoError('Autoplay is not allowed. Please click play to start the video.');
+          }
+        });
       }
     }
   };
@@ -93,18 +118,6 @@ const VideoPlayer = ({
     }
   };
 
-  // Reset video state when source changes
-  useEffect(() => {
-    setCurrentTime(0);
-    setIsPlaying(false);
-    setVideoError(null);
-    
-    // If video is already loaded, reset its time
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-    }
-  }, [customVideoSrc]);
-
   useEffect(() => {
     const videoElement = videoRef.current;
     if (videoElement) {
@@ -119,12 +132,20 @@ const VideoPlayer = ({
       const handleFullscreenChange = () => {
         setIsFullscreen(!!document.fullscreenElement);
       };
+      const handleWaiting = () => {
+        setIsLoading(true);
+      };
+      const handleCanPlay = () => {
+        setIsLoading(false);
+      };
       
       videoElement.addEventListener('play', handlePlay);
       videoElement.addEventListener('pause', handlePause);
       videoElement.addEventListener('timeupdate', handleTimeUpdate);
       videoElement.addEventListener('durationchange', handleDurationChange);
       videoElement.addEventListener('volumechange', handleVolumeChange);
+      videoElement.addEventListener('waiting', handleWaiting);
+      videoElement.addEventListener('canplay', handleCanPlay);
       document.addEventListener('fullscreenchange', handleFullscreenChange);
       
       return () => {
@@ -133,6 +154,8 @@ const VideoPlayer = ({
         videoElement.removeEventListener('timeupdate', handleTimeUpdate);
         videoElement.removeEventListener('durationchange', handleDurationChange);
         videoElement.removeEventListener('volumechange', handleVolumeChange);
+        videoElement.removeEventListener('waiting', handleWaiting);
+        videoElement.removeEventListener('canplay', handleCanPlay);
         document.removeEventListener('fullscreenchange', handleFullscreenChange);
       };
     }
@@ -141,15 +164,27 @@ const VideoPlayer = ({
   return (
     <div className="video-container">
       <div className="relative rounded-lg overflow-hidden bg-black max-w-3xl mx-auto">
+        {isLoading && !videoError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
+            <div className="flex flex-col items-center">
+              <svg className="animate-spin h-10 w-10 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="mt-2 text-sm text-white">Loading video...</span>
+            </div>
+          </div>
+        )}
+        
         <video
           ref={videoRef}
           className="w-full h-auto"
           autoPlay
-          loop
           playsInline
           onLoadedData={handleLoadedData}
           onError={handleVideoError}
           aria-label={`Video player - ${videoName}`}
+          key={customVideoSrc || 'default'}
         >
           {customVideoSrc ? (
             <source src={customVideoSrc} type={customVideoType} />
@@ -172,6 +207,7 @@ const VideoPlayer = ({
               onChange={handleSeek}
               className="flex-1 h-1.5 bg-gray-700 rounded-full appearance-none cursor-pointer accent-indigo-500"
               aria-label="Video progress"
+              disabled={isLoading || !!videoError}
             />
             <span className="text-xs text-white font-mono">{formatTimestamp(duration)}</span>
           </div>
@@ -183,6 +219,7 @@ const VideoPlayer = ({
                 onClick={togglePlay}
                 className="text-white hover:text-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-full p-1"
                 aria-label={isPlaying ? "Pause" : "Play"}
+                disabled={isLoading || !!videoError}
               >
                 {isPlaying ? (
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -200,6 +237,7 @@ const VideoPlayer = ({
                   onClick={toggleMute}
                   className="text-white hover:text-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-full p-1"
                   aria-label={isMuted ? "Unmute" : "Mute"}
+                  disabled={isLoading || !!videoError}
                 >
                   {isMuted ? (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -207,7 +245,7 @@ const VideoPlayer = ({
                     </svg>
                   ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071a1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243a1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828a1 1 0 010-1.415z" clipRule="evenodd" />
                     </svg>
                   )}
                 </button>
@@ -220,6 +258,7 @@ const VideoPlayer = ({
                   onChange={handleVolumeChange}
                   className="w-16 h-1.5 bg-gray-700 rounded-full appearance-none cursor-pointer accent-indigo-500"
                   aria-label="Volume"
+                  disabled={isLoading || !!videoError}
                 />
               </div>
             </div>
@@ -228,6 +267,7 @@ const VideoPlayer = ({
               onClick={toggleFullscreen}
               className="text-white hover:text-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-full p-1"
               aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              disabled={isLoading || !!videoError}
             >
               {isFullscreen ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
