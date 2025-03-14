@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react'
+import { captureVideoFrame, FrameData } from '@/utils/frameUtils'
 
 interface FrameCaptureProps {
   videoElement: HTMLVideoElement | null
-  onCapture: (frameDataUrl: string) => void
+  onCapture: (frameData: FrameData) => void
 }
 
 const FrameCapture = ({ videoElement, onCapture }: FrameCaptureProps) => {
@@ -15,25 +16,15 @@ const FrameCapture = ({ videoElement, onCapture }: FrameCaptureProps) => {
     try {
       setIsCapturing(true)
 
-      // Create a canvas element with the same dimensions as the video
-      const canvas = document.createElement('canvas')
-      const width = videoElement.videoWidth
-      const height = videoElement.videoHeight
-      canvas.width = width
-      canvas.height = height
-
-      // Draw the current video frame to the canvas
-      const context = canvas.getContext('2d')
-      if (!context) {
-        throw new Error('Could not get canvas context')
-      }
-      context.drawImage(videoElement, 0, 0, width, height)
-
-      // Convert the canvas to a data URL
-      const frameDataUrl = canvas.toDataURL('image/png')
+      // Use the utility function to capture the frame with metadata
+      const frameData = captureVideoFrame(videoElement)
       
-      // Pass the captured frame data URL to the parent component
-      onCapture(frameDataUrl)
+      if (frameData) {
+        // Pass the captured frame data to the parent component
+        onCapture(frameData)
+      } else {
+        throw new Error('Failed to capture frame')
+      }
     } catch (error) {
       console.error('Error capturing frame:', error)
     } finally {
