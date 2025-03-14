@@ -20,12 +20,26 @@ const FramePreview = ({ frameData, exportFormat, exportResolution }: FramePrevie
       return
     }
 
-    // Calculate dimensions based on selected resolution
-    const percentage = parseInt(exportResolution.replace('%', '')) / 100
-    const width = Math.round(frameData.width * percentage)
-    const height = Math.round(frameData.height * percentage)
-    
-    setOutputDimensions({ width, height })
+    try {
+      // Calculate dimensions based on selected resolution
+      const percentageStr = exportResolution.replace('%', '')
+      const percentage = parseInt(percentageStr) / 100
+      
+      if (isNaN(percentage)) {
+        console.error('Invalid percentage value:', exportResolution)
+        setOutputDimensions({ width: frameData.width, height: frameData.height })
+        return
+      }
+      
+      const width = Math.round(frameData.width * percentage)
+      const height = Math.round(frameData.height * percentage)
+      
+      setOutputDimensions({ width, height })
+    } catch (error) {
+      console.error('Error calculating dimensions:', error)
+      // Fallback to original dimensions
+      setOutputDimensions({ width: frameData.width, height: frameData.height })
+    }
   }, [frameData, exportResolution])
 
   // Format the timestamp as minutes:seconds.milliseconds
@@ -69,7 +83,11 @@ const FramePreview = ({ frameData, exportFormat, exportResolution }: FramePrevie
         <div className="bg-gray-800 p-2 rounded">
           <span className="block text-gray-400">Export Dimensions</span>
           <span className="font-mono">
-            {outputDimensions ? `${outputDimensions.width} × ${outputDimensions.height}` : 'Calculating...'}
+            {outputDimensions 
+              ? `${outputDimensions.width} × ${outputDimensions.height}` 
+              : exportResolution === '100%' 
+                ? `${frameData.width} × ${frameData.height}`
+                : 'Calculating...'}
           </span>
         </div>
       </div>

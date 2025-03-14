@@ -72,18 +72,62 @@ export const resizeFrame = (
   quality: number = 0.95
 ): Promise<FrameData> => {
   return new Promise((resolve, reject) => {
-    if (resolution === '100%') {
-      // If original resolution, just change format if needed
-      if (format === 'png' && frameData.dataUrl.includes('image/png')) {
+    try {
+      if (resolution === '100%') {
+        // If original resolution, just change format if needed
+        if (format === 'png' && frameData.dataUrl.includes('image/png')) {
+          resolve(frameData);
+          return;
+        }
+        
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = frameData.width;
+          canvas.height = frameData.height;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Could not get canvas context'));
+            return;
+          }
+          
+          ctx.drawImage(img, 0, 0);
+          const mimeType = `image/${format}`;
+          const dataUrl = format === 'png' 
+            ? canvas.toDataURL(mimeType) 
+            : canvas.toDataURL(mimeType, quality);
+          
+          resolve({
+            ...frameData,
+            dataUrl
+          });
+        };
+        
+        img.onerror = () => reject(new Error('Failed to load image for resizing'));
+        img.src = frameData.dataUrl;
+        return;
+      }
+      
+      // Calculate new dimensions based on percentage
+      const percentageStr = resolution.replace('%', '');
+      const percentage = parseInt(percentageStr) / 100;
+      
+      if (isNaN(percentage)) {
+        console.error('Invalid percentage value:', resolution);
+        // Fall back to original resolution
         resolve(frameData);
         return;
       }
       
+      const targetWidth = Math.round(frameData.width * percentage);
+      const targetHeight = Math.round(frameData.height * percentage);
+      
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        canvas.width = frameData.width;
-        canvas.height = frameData.height;
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
         
         const ctx = canvas.getContext('2d');
         if (!ctx) {
@@ -91,60 +135,30 @@ export const resizeFrame = (
           return;
         }
         
-        ctx.drawImage(img, 0, 0);
+        // Draw the image with the new dimensions
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        
+        // Convert to the specified format
         const mimeType = `image/${format}`;
         const dataUrl = format === 'png' 
           ? canvas.toDataURL(mimeType) 
           : canvas.toDataURL(mimeType, quality);
         
         resolve({
-          ...frameData,
-          dataUrl
+          dataUrl,
+          width: targetWidth,
+          height: targetHeight,
+          timestamp: frameData.timestamp,
+          originalFormat: frameData.originalFormat
         });
       };
       
       img.onerror = () => reject(new Error('Failed to load image for resizing'));
       img.src = frameData.dataUrl;
-      return;
+    } catch (error) {
+      console.error('Error in resizeFrame:', error);
+      reject(error);
     }
-    
-    // Calculate new dimensions based on percentage
-    const percentage = parseInt(resolution.replace('%', '')) / 100;
-    const targetWidth = Math.round(frameData.width * percentage);
-    const targetHeight = Math.round(frameData.height * percentage);
-    
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error('Could not get canvas context'));
-        return;
-      }
-      
-      // Draw the image with the new dimensions
-      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-      
-      // Convert to the specified format
-      const mimeType = `image/${format}`;
-      const dataUrl = format === 'png' 
-        ? canvas.toDataURL(mimeType) 
-        : canvas.toDataURL(mimeType, quality);
-      
-      resolve({
-        dataUrl,
-        width: targetWidth,
-        height: targetHeight,
-        timestamp: frameData.timestamp,
-        originalFormat: frameData.originalFormat
-      });
-    };
-    
-    img.onerror = () => reject(new Error('Failed to load image for resizing'));
-    img.src = frameData.dataUrl;
   });
 };
 

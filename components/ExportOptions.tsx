@@ -29,12 +29,26 @@ const ExportOptions = ({
       return
     }
 
-    // Calculate dimensions based on selected resolution
-    const percentage = parseInt(resolution.replace('%', '')) / 100
-    const width = Math.round(frameData.width * percentage)
-    const height = Math.round(frameData.height * percentage)
-    
-    setDimensions({ width, height })
+    try {
+      // Calculate dimensions based on selected resolution
+      const percentageStr = resolution.replace('%', '')
+      const percentage = parseInt(percentageStr) / 100
+      
+      if (isNaN(percentage)) {
+        console.error('Invalid percentage value:', resolution)
+        setDimensions({ width: frameData.width, height: frameData.height })
+        return
+      }
+      
+      const width = Math.round(frameData.width * percentage)
+      const height = Math.round(frameData.height * percentage)
+      
+      setDimensions({ width, height })
+    } catch (error) {
+      console.error('Error calculating dimensions:', error)
+      // Fallback to original dimensions
+      setDimensions({ width: frameData.width, height: frameData.height })
+    }
   }, [frameData, resolution])
 
   return (
@@ -78,9 +92,13 @@ const ExportOptions = ({
             <option value="50%">50%</option>
             <option value="25%">25%</option>
           </select>
-          {dimensions && (
+          {frameData && (
             <p className="mt-1 text-xs text-gray-400">
-              Output dimensions: {dimensions.width} × {dimensions.height} px
+              Output dimensions: {dimensions 
+                ? `${dimensions.width} × ${dimensions.height} px` 
+                : resolution === '100%' 
+                  ? `${frameData.width} × ${frameData.height} px`
+                  : 'Calculating...'}
             </p>
           )}
         </div>
