@@ -2,8 +2,13 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
 // Define supported video formats
-const SUPPORTED_FORMATS = ['video/mp4', 'video/webm', 'video/ogg']
-const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
+const SUPPORTED_FORMATS = [
+  'video/mp4',
+  'video/quicktime', // MOV format used by iPhones
+  'video/webm',
+  'video/ogg'
+]
+const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB to accommodate larger iPhone videos
 
 interface VideoUploadProps {
   onVideoSelected: (videoSrc: string, videoType: string, fileName: string) => void
@@ -37,19 +42,23 @@ const VideoUpload = ({ onVideoSelected, className = '', isProcessing = false }: 
 
   // Handle file validation
   const validateFile = (file: File): boolean => {
-    // Check file type
-    if (!SUPPORTED_FORMATS.includes(file.type)) {
-      setError(`Unsupported file format. Please upload a video in ${SUPPORTED_FORMATS.map(f => f.split('/')[1]).join(', ')} format.`)
-      return false
+    // Check file type - also handle iPhone videos which might have a different MIME type
+    const isValidType = SUPPORTED_FORMATS.includes(file.type) || 
+                        file.name.toLowerCase().endsWith('.mov') || 
+                        file.name.toLowerCase().endsWith('.mp4');
+    
+    if (!isValidType) {
+      setError(`Unsupported file format. Please upload a video in MP4, MOV, WebM, or OGG format.`);
+      return false;
     }
 
     // Check file size
     if (file.size > MAX_FILE_SIZE) {
-      setError(`File is too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`)
-      return false
+      setError(`File is too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
+      return false;
     }
 
-    return true
+    return true;
   }
 
   // Process the selected file
@@ -78,8 +87,21 @@ const VideoUpload = ({ onVideoSelected, className = '', isProcessing = false }: 
         });
       }, 100);
 
-      // Create a blob URL for the video - SIMPLIFIED APPROACH
+      // Create a blob URL for the video
       const videoUrl = URL.createObjectURL(file)
+      
+      // Determine the video type - handle iPhone videos specifically
+      let videoType = file.type;
+      if (!videoType || videoType === '') {
+        // If MIME type is not recognized, infer from file extension
+        if (file.name.toLowerCase().endsWith('.mov')) {
+          videoType = 'video/quicktime';
+        } else if (file.name.toLowerCase().endsWith('.mp4')) {
+          videoType = 'video/mp4';
+        } else {
+          videoType = 'video/mp4'; // Default fallback
+        }
+      }
       
       // Set timeout to simulate processing completion
       setTimeout(() => {
@@ -93,7 +115,7 @@ const VideoUpload = ({ onVideoSelected, className = '', isProcessing = false }: 
         setUploadProgress(100)
         
         // Pass the video source to the parent component
-        onVideoSelected(videoUrl, file.type, file.name)
+        onVideoSelected(videoUrl, videoType, file.name)
         
         // Reset upload state after a brief delay
         setTimeout(() => {
@@ -195,7 +217,7 @@ const VideoUpload = ({ onVideoSelected, className = '', isProcessing = false }: 
           type="file"
           ref={fileInputRef}
           onChange={handleFileInputChange}
-          accept={SUPPORTED_FORMATS.join(',')}
+          accept=".mp4,.mov,.webm,.ogg,video/mp4,video/quicktime,video/webm,video/ogg"
           className="sr-only"
           aria-hidden="true"
           disabled={isDisabled}
@@ -256,7 +278,7 @@ const VideoUpload = ({ onVideoSelected, className = '', isProcessing = false }: 
               </div>
               
               <p id="upload-description" className="text-xs text-gray-400">
-                Supported formats: MP4, WebM, OGG (max {MAX_FILE_SIZE / (1024 * 1024)}MB)
+                Supported formats: MP4, MOV (iPhone), WebM, OGG (max {MAX_FILE_SIZE / (1024 * 1024)}MB)
               </p>
             </>
           )}

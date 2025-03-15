@@ -25,6 +25,13 @@ const VideoPlayer = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [iOSDevice, setIOSDevice] = useState(false);
+  
+  // Detect iOS device
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    setIOSDevice(isIOS);
+  }, []);
   
   // Reset video state when source changes
   useEffect(() => {
@@ -47,7 +54,16 @@ const VideoPlayer = ({
   };
 
   const handleVideoError = () => {
-    const errorMessage = 'Error loading video. Please try another file or use the default video.';
+    let errorMessage = '';
+    
+    if (customVideoType === 'video/quicktime' && !iOSDevice) {
+      errorMessage = 'This MOV file may use a codec not supported by your browser. On desktop browsers, MP4 format is recommended.';
+    } else if (customVideoSrc && customVideoSrc.startsWith('blob:')) {
+      errorMessage = 'Error loading video. The file may be corrupted or use an unsupported format/codec.';
+    } else {
+      errorMessage = 'Error loading video. Please try another file or use the default video.';
+    }
+    
     setVideoError(errorMessage);
     setIsLoading(false);
     
@@ -161,9 +177,24 @@ const VideoPlayer = ({
     }
   }, []);
 
+  // Show a special message for iOS users
+  const getIOSMessage = () => {
+    if (iOSDevice && customVideoSrc) {
+      return (
+        <div className="mt-2 text-xs text-indigo-400 bg-indigo-900/20 p-2 rounded-md text-center">
+          <p className="font-medium">iPhone/iPad User Detected</p>
+          <p>For best results when uploading videos directly from your device, use the "Upload from Files" option after tapping "Click to upload".</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="video-container">
-      <div className="relative rounded-lg overflow-hidden bg-black max-w-3xl mx-auto">
+      {getIOSMessage()}
+      
+      <div className="relative rounded-lg overflow-hidden bg-black max-w-3xl mx-auto mt-2">
         {isLoading && !videoError && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
             <div className="flex flex-col items-center">
@@ -181,6 +212,7 @@ const VideoPlayer = ({
           className="w-full h-auto"
           autoPlay
           playsInline
+          muted={iOSDevice} // iOS usually requires muted for autoplay
           onLoadedData={handleLoadedData}
           onError={handleVideoError}
           aria-label={`Video player - ${videoName}`}

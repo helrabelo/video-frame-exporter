@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import VideoPlayer from '@/components/VideoPlayer'
@@ -26,6 +27,13 @@ export default function Home() {
   const [isVideoLoading, setIsVideoLoading] = useState<boolean>(false)
   const [videoLoadError, setVideoLoadError] = useState<string | null>(null)
   const [loadAttempts, setLoadAttempts] = useState<number>(0)
+  const [isIOSDevice, setIsIOSDevice] = useState<boolean>(false)
+  
+  // Detect iOS device
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    setIsIOSDevice(isIOS);
+  }, []);
   
   // Clean up blob URLs when component unmounts or when a new video is uploaded
   useEffect(() => {
@@ -107,10 +115,30 @@ export default function Home() {
     setCapturedFrame(null)
   }, [customVideoSrc]);
 
+  // Display iOS-specific tips
+  const renderIOSTips = () => {
+    if (!isIOSDevice) return null;
+    
+    return (
+      <div className="bg-indigo-900/30 p-4 rounded-xl shadow-lg border border-indigo-800/50 mb-6">
+        <h3 className="text-lg font-semibold text-indigo-300 mb-2">Tips for iPhone Users</h3>
+        <ul className="text-sm text-gray-200 space-y-2 list-disc pl-5">
+          <li>For best results, use the <strong>"Choose from Files"</strong> option rather than directly accessing your camera roll</li>
+          <li>If a video doesn't load properly, try using a different video or the default sample video</li>
+          <li>Modern iPhone videos (MOV format) are fully supported</li>
+          <li>Make sure to allow browser permissions if prompted</li>
+        </ul>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100 py-8">
       <main className="w-full max-w-6xl px-4 flex flex-col gap-6">
         <h1 className="text-3xl font-bold mb-2 text-center text-white">Video Frame Exporter</h1>
+
+        {/* iOS-specific tips for iPhone users */}
+        {renderIOSTips()}
 
         {/* Video Player - Top */}
         <div className="bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700">
@@ -162,9 +190,16 @@ export default function Home() {
             onVideoSelected={handleVideoSelected} 
             isProcessing={isVideoLoading}
           />
-          <p className="mt-4 text-xs text-gray-400">
-            Note: Video processing happens entirely in your browser. No files are uploaded to any server.
-          </p>
+          <div className="mt-4 space-y-2">
+            <p className="text-xs text-gray-400">
+              Note: Video processing happens entirely in your browser. No files are uploaded to any server.
+            </p>
+            {isIOSDevice && (
+              <p className="text-xs text-indigo-400">
+                <strong>iPhone/iPad Tip:</strong> Tap "Click to upload" and use the "Browse" or "Choose from Files" option for best results.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Actions and Export Options - Middle, side by side */}
