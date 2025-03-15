@@ -2,7 +2,12 @@
 
 A modern web application that allows users to extract and export frames from videos in various formats and resolutions.
 
-![Video Frame Exporter](https://via.placeholder.com/800x400?text=Video+Frame+Exporter)
+![Video Frame Exporter](https://placehold.co/600x400/333333/FFFFFF?text=Video+Frame+Exporter)
+
+## Live Demo
+
+Try the Video Frame Exporter live at [https://video-frame-exporter.vercel.app/](https://video-frame-exporter.vercel.app/)
+
 
 ## Features
 
