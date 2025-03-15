@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unescaped-entities */
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import VideoPlayer from '@/components/VideoPlayer'
@@ -8,6 +7,13 @@ import ExportOptions, { ExportFormat, ExportResolution } from '@/components/Expo
 import DownloadButton from '@/components/DownloadButton'
 import VideoUpload from '@/components/VideoUpload'
 import { FrameData } from '@/utils/frameUtils'
+
+// Extend Window interface to include MSStream property
+declare global {
+  interface Window {
+    MSStream?: unknown;
+  }
+}
 
 export default function Home() {
   // Video element reference
@@ -123,8 +129,8 @@ export default function Home() {
       <div className="bg-indigo-900/30 p-4 rounded-xl shadow-lg border border-indigo-800/50 mb-6">
         <h3 className="text-lg font-semibold text-indigo-300 mb-2">Tips for iPhone Users</h3>
         <ul className="text-sm text-gray-200 space-y-2 list-disc pl-5">
-          <li>For best results, use the <strong>"Choose from Files"</strong> option rather than directly accessing your camera roll</li>
-          <li>If a video doesn't load properly, try using a different video or the default sample video</li>
+          <li>For best results, use the <strong>&quot;Choose from Files&quot;</strong> option rather than directly accessing your camera roll</li>
+          <li>If a video doesn&apos;t load properly, try using a different video or the default sample video</li>
           <li>Modern iPhone videos (MOV format) are fully supported</li>
           <li>Make sure to allow browser permissions if prompted</li>
         </ul>
@@ -196,7 +202,7 @@ export default function Home() {
             </p>
             {isIOSDevice && (
               <p className="text-xs text-indigo-400">
-                <strong>iPhone/iPad Tip:</strong> Tap "Click to upload" and use the "Browse" or "Choose from Files" option for best results.
+                <strong>iPhone/iPad Tip:</strong> Tap &quot;Click to upload&quot; and use the &quot;Browse&quot; or &quot;Choose from Files&quot; option for best results.
               </p>
             )}
           </div>

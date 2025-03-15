@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unescaped-entities */
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
@@ -61,7 +60,7 @@ const FramePreview = ({ frameData, exportFormat, exportResolution }: FramePrevie
           </svg>
           <p className="text-gray-400 text-sm">
             No frame captured yet. <br />
-            Use the "Capture Frame" button to capture a frame from the video.
+            Use the &quot;Capture Frame&quot; button to capture a frame from the video.
           </p>
         </div>
       </div>

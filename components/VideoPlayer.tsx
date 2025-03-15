@@ -183,7 +183,7 @@ const VideoPlayer = ({
       return (
         <div className="mt-2 text-xs text-indigo-400 bg-indigo-900/20 p-2 rounded-md text-center">
           <p className="font-medium">iPhone/iPad User Detected</p>
-          <p>For best results when uploading videos directly from your device, use the "Upload from Files" option after tapping "Click to upload".</p>
+          <p>For best results when uploading videos directly from your device, use the &quot;Upload from Files&quot; option after tapping &quot;Click to upload&quot;.</p>
         </div>
       );
     }
